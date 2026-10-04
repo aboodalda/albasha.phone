@@ -14,7 +14,7 @@ function R(){setTimeout(RV,0);setTimeout(()=>{[["new","new"],["used","used"],["a
 $("ga").innerHTML=u(P.filter(p=>p.type=="acc").map(p=>p.cat)).map(c=>row("a"+c,(ACI[c]||"🎧")+" "+c,c,P.filter(p=>p.type=="acc"&&p.cat==c&&f(p)))).join("")}
 ["gn","gu","ga"].forEach(id=>$(id).onclick=e=>{const k=e.target.getAttribute("data-k");if(k){X[k]=!X[k];R()}});
 $("q").oninput=function(){q=this.value.toLowerCase();R()};
-function applyCatalog(d){try{if(d.products){P=d.products.filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));try{localStorage.setItem("bp",JSON.stringify(P))}catch(e){}}
+function applyCatalog(d){try{if(d.products&&d.products.length){P=d.products.filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));try{localStorage.setItem("bp",JSON.stringify(P))}catch(e){}}
 if(d.branches&&d.branches.length){BRS=d.branches;try{localStorage.setItem("bb",JSON.stringify(BRS))}catch(e){}RB()}
 if(d.banner){BNR=d.banner;try{localStorage.setItem("bn",JSON.stringify(BNR))}catch(e){}RN()}
 if(d.services){SVS=d.services;try{localStorage.setItem("sv",JSON.stringify(SVS))}catch(e){}RSV()}
@@ -23,6 +23,7 @@ async function legacy(f,db){const s=await f.getDocs(f.collection(db,"products"))
 for(const[k,set]of[["branches",d=>{if(d.list){BRS=d.list;RB()}}],["banner",d=>{BNR=d;RN()}],["services",d=>{if(d.list){SVS=d.list;RSV()}}],["screens",d=>{if(d.list){SCREENS=d.list;RSV()}}]]){try{const x=await f.getDoc(f.doc(db,"settings",k));if(x.exists())set(x.data())}catch(e){}}R();U()}
 async function load(){try{P=JSON.parse(localStorage.getItem("bp")||"null")}catch(e){}if(!P||!P.length)P=ON?[]:demoDocs().map((d,i)=>({...d,id:"d"+i}));R();U();if(!ON){LD=false;R();return}
 try{const{f,db}=await fx();
+try{const ps=await f.getDocs(f.collection(db,"products"));const latest=ps.docs.map(d=>({...d.data(),id:d.id})).filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));if(latest.length){P=latest;try{localStorage.setItem("bp",JSON.stringify(P))}catch(e){}R();U()}}catch(e){console.warn("products load",e)}
 await new Promise(res=>{let first=true;f.onSnapshot(f.doc(db,"settings","catalog"),async s=>{try{if(s.exists())applyCatalog(s.data());else if(first)await legacy(f,db)}catch(e){console.warn(e)}first=false;res()},e=>{console.warn(e);res()})});
 try{if(!sessionStorage.getItem("bv")){sessionStorage.setItem("bv","1");const n=new Date(),d=new Date(n-n.getTimezoneOffset()*6e4).toISOString().slice(0,10),r=f.doc(db,"visits",d);try{await f.updateDoc(r,{n:f.increment(1)})}catch(e){await f.setDoc(r,{n:1})}}}catch(e){}
 }catch(e){console.warn(e)}finally{LD=false;R()}}
