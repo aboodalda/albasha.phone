@@ -32,7 +32,7 @@ const S=()=>{try{localStorage.setItem("bc",JSON.stringify(cart))}catch(e){}},ids
 const T=t=>{const e=$("ktoast");e.textContent=t;e.className="on";clearTimeout(T.t);T.t=setTimeout(()=>e.className="",1800)};
 window.A=id=>{const p=g(id),ct=$("cart");ct.classList.remove("bump");void ct.offsetWidth;ct.classList.add("bump");cart[id]=p.type=="used"?1:(cart[id]||0)+1;S();U();T("تمت الإضافة للسلة ✓")};
 window.Qy=(id,d)=>{let v=(cart[id]||0)+d;if(g(id).type=="used"&&v>1)v=1;v<=0?delete cart[id]:cart[id]=v;S();U()};
-function U(){$("n").textContent=cnt();if($("ksh").className=="on")RC()}
+function U(){$("n").textContent=cnt();if($("bn"))$("bn").textContent=cnt();if($("ksh").className=="on")RC()}
 function RC(){const k=ids(),e=!k.length;$("kdone").style.display="none";
 $("kit").innerHTML=e?'<div class="ke"><span>🛒</span><b>سلتك فاضية</b><p>أضف جوالات أو إكسسوارات من المتجر</p></div>':k.map(i=>{const p=g(i),c=(p.colors||"#2b4bd0,#050b22");return`<div class="ki"><span class="kt" style="${p.img||p.type=="acc"?"":"background:linear-gradient(160deg,"+c+")"}">${p.img?`<img src="${E(cl(p.img,120))}" alt="">`:p.type=="acc"?p.emoji||"🎧":""}</span><div class="kn2"><b>${E(p.name)}</b><small>${p.type=="used"?"مستعمل · قطعة واحدة":E(p.brand||p.cat)}</small><span>${money(p.price*cart[i])}</span></div><div class="kq"><button onclick="Qy('${i}',1)" aria-label="زيادة الكمية">＋</button><i>${cart[i]}</i><button onclick="Qy('${i}',-1)" aria-label="إنقاص الكمية">−</button></div></div>`}).join("");
 $("kform").style.display=e?"none":"block";$("ktot").textContent=money(tot())}
