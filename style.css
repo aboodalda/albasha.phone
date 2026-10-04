@@ -332,3 +332,24 @@ header{background:#fff;color:#091431}
   .phone-back{width:105px!important;height:180px!important}
   .phone-front{width:96px!important;height:172px!important;right:9%!important}
 }
+
+/* ===== Hero composition: Arabic copy right / device left ===== */
+.h1 .hero-copy{margin-inline-start:auto;margin-inline-end:0;text-align:right}
+.h1 .phone-back,.h1 .phone-front{right:auto}
+.h1 .phone-back{left:8%}
+.h1 .phone-front{left:17%}
+.h1 .phone-glow{right:auto;left:5%}
+.h1 .chip-one{right:auto;left:4%}
+.h1 .chip-two{right:auto;left:28%}
+@media(max-width:700px){
+  .h1 .hero-copy{margin-inline-start:auto;margin-inline-end:0;text-align:right;max-width:56%!important}
+  .h1 .phone-back{right:auto!important;left:1%!important;top:19%!important}
+  .h1 .phone-front{right:auto!important;left:10%!important;top:24%!important}
+  .h1 .phone-glow{right:auto!important;left:-2%!important;top:18%!important}
+  .h1 .chip-one{right:auto!important;left:1%!important;top:26%!important}
+  .h1 .chip-two{right:auto!important;left:27%!important;bottom:14%!important}
+}
+@media(max-width:380px){
+  .h1 .phone-back{right:auto!important;left:1%!important}
+  .h1 .phone-front{right:auto!important;left:9%!important}
+}
