@@ -2,7 +2,7 @@ import {cfg,BR} from "./firebase-config.js";
 import {demoDocs} from "./demo.js";
 const $=i=>document.getElementById(i),V="https://www.gstatic.com/firebasejs/10.12.2/",ON=cfg.apiKey&&!cfg.apiKey.startsWith("ضع");
 const ACI={"ساعات ذكية":"⌚","سماعات رأس":"🎧","سماعات لاسلكية":"🎵","سماعات سلكية":"🎶","شواحن الجوالات":"🔌","كفرات الجوالات":"🛡️"};
-let P=[],cart={},q="",X={},LD=ON;
+let P=[],cart={},q="",X={},LD=ON,SCREENS=[];
 const cl=(u,w)=>u.includes("/upload/")?u.replace("/upload/","/upload/f_auto,q_auto,w_"+w+"/"):u,g=id=>P.find(p=>p.id==id);
 const fx=async()=>{const[a,f]=await Promise.all([import(V+"firebase-app.js"),import(V+"firebase-firestore.js")]);return{f,db:f.getFirestore(a.initializeApp(cfg))}};
 const money=n=>"₪"+(+n).toLocaleString();
@@ -74,6 +74,5 @@ let RT;addEventListener("resize",()=>{clearTimeout(RT);RT=setTimeout(SPI,200)});
 try{if(/[?&]utm_/.test(location.search))history.replaceState(null,"",location.pathname+location.hash)}catch(e){}
 const DSV=[{icon:"📱",title:"شاشة iPhone 13",desc:"استفسر عن أنواع الشاشات وسعر التركيب",price:"",active:true},{icon:"📱",title:"شاشة Samsung A54",desc:"تأكد من التوفر وتفاصيل الصيانة",price:"",active:true},{icon:"🔋",title:"بطاريات وشحن",desc:"تبديل بطارية ومنفذ شحن",price:"",active:true},{icon:"🛠️",title:"فحص وصيانة عامة",desc:"تشخيص العطل وخيارات الإصلاح",price:"",active:true}];
 let SVS=DSV;try{SVS=JSON.parse(localStorage.getItem("sv"))||DSV}catch(e){}
-function RSV(){const rp=document.querySelector(".rp"),L=SVS.filter(s=>s.active!==false&&s.title);if(!rp)return;rp.style.display=L.length?"":"none";rp.innerHTML=L.map((s,i)=>`<div class="rc"><em>${E(s.icon||"🔧")}</em><h3>${E(s.title)}</h3><p>${E(s.desc)}</p>${s.price?`<span style="color:var(--or);font-weight:900;display:block;margin:2px 0 6px">${E(s.price)}</span>`:""}<a href="#" data-i="${i}">احجز / استفسر ↗</a></div>`).join("");setTimeout(RV,0)}
-document.querySelector(".rp")&&(document.querySelector(".rp").onclick=e=>{const k=e.target.closest("a[data-i]");if(!k)return;e.preventDefault();const s=SVS.filter(x=>x.active!==false&&x.title)[+k.dataset.i];RP(1);$("risu").value=s?s.title:""});
-RB();RN();RSV();load();RV();SPI();
+function RSV(){const rp=document.querySelector(".rp");if(!rp)return;const screens=SCREENS.filter(s=>s.active!==false&&s.device);const services=SVS.filter(s=>s.active!==false&&s.title);if(!screens.length&&!services.length){rp.style.display="none";return}rp.style.display="";rp.innerHTML=[...screens.map((s,i)=>`<div class="rc screen-card"><em>${s.img?`<img loading="lazy" src="${E(cl(s.img,180))}" alt="${E(s.device)}">`:"▣"}</em><h3>${E(s.device)}</h3><p>${E(s.type||"شاشة متوفرة")}</p>${s.price?`<span style="color:var(--or);font-weight:900;display:block;margin:2px 0 6px">₪${(+s.price).toLocaleString()}</span>`:""}<a href="#" data-screen="${i}">استفسر ↗</a></div>`),...services.map((s,i)=>`<div class="rc"><em>${E(s.icon||"🔧")}</em><h3>${E(s.title)}</h3><p>${E(s.desc)}</p>${s.price?`<span style="color:var(--or);font-weight:900;display:block;margin:2px 0 6px">${E(s.price)}</span>`:""}<a href="#" data-service="${i}">احجز / استفسر ↗</a></div>`)].join("");setTimeout(RV,0)}
+document.querySelector(".rp")&&(document.querySelector(".rp").onclick=e=>{const k=e.target.closest("a[data-screen],a[data-service]");if(!k)return;e.preventDefault();let title="";if(k.dataset.screen){const s=SCREENS.filter(x=>x.active!==false&&x.device)[+k.dataset.screen];title=s?s.device+" — "+(s.type||"شاشة"):""}else{const s=SVS.filter(x=>x.active!==false&&x.title)[+k.dataset.service];title=s?s.title:""}RP(1);$("risu").value=title});
