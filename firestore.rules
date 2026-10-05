@@ -2,19 +2,76 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{db}/documents {
     function admin(){ return request.auth != null && request.auth.token.email == "abd14ab14@gmail.com"; }
-    match /products/{id} { allow read: if true; allow write: if admin(); }
+
+    match /products/{id} {
+      allow read: if true;
+      allow write: if admin();
+    }
+
     match /repairs/{id} {
-      allow create: if request.resource.data.keys().hasOnly(['name','phone','branch','device','issue','status','at']);
+      allow create: if
+        request.resource.data.keys().hasOnly(['name','phone','branch','device','issue','status','at']) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() >= 2 &&
+        request.resource.data.name.size() <= 100 &&
+        request.resource.data.phone is string &&
+        request.resource.data.phone.size() >= 9 &&
+        request.resource.data.phone.size() <= 20 &&
+        request.resource.data.branch is string &&
+        request.resource.data.branch.size() >= 2 &&
+        request.resource.data.branch.size() <= 50 &&
+        request.resource.data.device is string &&
+        request.resource.data.device.size() >= 2 &&
+        request.resource.data.device.size() <= 100 &&
+        request.resource.data.issue is string &&
+        request.resource.data.issue.size() <= 500 &&
+        request.resource.data.status == "جديد" &&
+        request.resource.data.at is timestamp;
       allow read, update, delete: if admin();
     }
+
     match /visits/{d} {
       allow read: if admin();
-      allow create: if d.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}') && request.resource.data.keys().hasOnly(['n']) && request.resource.data.n == 1;
-      allow update: if request.resource.data.keys().hasOnly(['n']) && request.resource.data.n == resource.data.n + 1;
+      allow create: if
+        d.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}') &&
+        request.resource.data.keys().hasOnly(['n']) &&
+        request.resource.data.n == 1;
+      allow update: if
+        request.resource.data.keys().hasOnly(['n']) &&
+        request.resource.data.n is number &&
+        request.resource.data.n == resource.data.n + 1;
     }
-    match /settings/{d} { allow read: if true; allow write: if admin(); }
+
+    match /settings/{d} {
+      allow read: if true;
+      allow write: if admin();
+    }
+
     match /orders/{id} {
-      allow create: if request.resource.data.keys().hasOnly(['name','phone','branch','method','addr','note','items','total','status','at']) && request.resource.data.total is number && request.resource.data.items.size() <= 50;
+      allow create: if
+        request.resource.data.keys().hasOnly(['name','phone','branch','method','addr','note','items','total','status','at']) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() >= 2 &&
+        request.resource.data.name.size() <= 100 &&
+        request.resource.data.phone is string &&
+        request.resource.data.phone.size() >= 9 &&
+        request.resource.data.phone.size() <= 20 &&
+        request.resource.data.branch is string &&
+        request.resource.data.branch.size() >= 2 &&
+        request.resource.data.branch.size() <= 50 &&
+        request.resource.data.method is string &&
+        request.resource.data.method.size() <= 30 &&
+        request.resource.data.addr is string &&
+        request.resource.data.addr.size() <= 300 &&
+        request.resource.data.note is string &&
+        request.resource.data.note.size() <= 500 &&
+        request.resource.data.items is list &&
+        request.resource.data.items.size() >= 1 &&
+        request.resource.data.items.size() <= 50 &&
+        request.resource.data.total is number &&
+        request.resource.data.total >= 0 &&
+        request.resource.data.status == "جديد" &&
+        request.resource.data.at is timestamp;
       allow read, update, delete: if admin();
     }
   }
