@@ -7,6 +7,29 @@ const cl=(u,w)=>u.includes("/upload/")?u.replace("/upload/","/upload/f_auto,q_au
 const fx=async()=>{const[a,f]=await Promise.all([import(V+"firebase-app.js"),import(V+"firebase-firestore.js")]);return{f,db:f.getFirestore(a.initializeApp(cfg))}};
 const readDocs=async(f,ref)=>{try{if(f.getDocsFromServer)return await f.getDocsFromServer(ref)}catch(e){console.warn("server read fallback:",e)}return f.getDocs(ref)};
 const readDoc=async(f,ref)=>{try{if(f.getDocFromServer)return await f.getDocFromServer(ref)}catch(e){console.warn("server doc fallback:",e)}return f.getDoc(ref)};
+const restValue=v=>{
+  if(v==null)return null;
+  if(Object.prototype.hasOwnProperty.call(v,"stringValue"))return v.stringValue;
+  if(Object.prototype.hasOwnProperty.call(v,"integerValue"))return Number(v.integerValue);
+  if(Object.prototype.hasOwnProperty.call(v,"doubleValue"))return Number(v.doubleValue);
+  if(Object.prototype.hasOwnProperty.call(v,"booleanValue"))return !!v.booleanValue;
+  if(Object.prototype.hasOwnProperty.call(v,"timestampValue"))return v.timestampValue;
+  if(Object.prototype.hasOwnProperty.call(v,"nullValue"))return null;
+  if(Object.prototype.hasOwnProperty.call(v,"arrayValue"))return (v.arrayValue.values||[]).map(restValue);
+  if(Object.prototype.hasOwnProperty.call(v,"mapValue"))return Object.fromEntries(Object.entries(v.mapValue.fields||{}).map(([k,x])=>[k,restValue(x)]));
+  return v;
+};
+const restDoc=d=>Object.fromEntries(Object.entries(d.fields||{}).map(([k,v])=>[k,restValue(v)]));
+const restGet=async path=>{
+  const u="https://firestore.googleapis.com/v1/projects/"+encodeURIComponent(cfg.projectId)+"/databases/(default)/documents/"+path;
+  const r=await fetch(u,{cache:"no-store"});
+  if(!r.ok)throw new Error("Firestore REST "+r.status);
+  return r.json();
+};
+const restProducts=async()=>{
+  const d=await restGet("products?pageSize=100");
+  return (d.documents||[]).map(x=>({...restDoc(x),id:String(x.name||"").split("/").pop()}));
+};
 const money=n=>"₪"+(+n).toLocaleString();
 
 /* Normalize product records coming from Firestore/catalog.
@@ -89,8 +112,21 @@ async function load(){
         P=latest;
         try{localStorage.setItem("bp",JSON.stringify(P))}catch(e){}
         LD=false;R();U();
+      }else{
+        try{
+          const rp=await restProducts();
+          const rl=normalizeProducts(rp).filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));
+          if(rl.length){P=rl;try{localStorage.setItem("bp",JSON.stringify(P))}catch(e){};LD=false;R();U()}
+        }catch(re){console.warn("products REST fallback:",re)}
       }
-    }catch(e){console.warn("products load:",e)}
+    }catch(e){
+      console.warn("products load:",e);
+      try{
+        const rp=await restProducts();
+        const rl=normalizeProducts(rp).filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));
+        if(rl.length){P=rl;try{localStorage.setItem("bp",JSON.stringify(P))}catch(x){};LD=false;R();U()}
+      }catch(re){console.warn("products REST fallback:",re)}
+    }
 
     // Catalog is only for branches/banner/services. Never let an empty products array erase P.
     try{
