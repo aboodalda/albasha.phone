@@ -6,24 +6,68 @@ let P=[],cart={},q="",X={},LD=ON,SCREENS=[];
 const cl=(u,w)=>u.includes("/upload/")?u.replace("/upload/","/upload/f_auto,q_auto,w_"+w+"/"):u,g=id=>P.find(p=>p.id==id);
 const fx=async()=>{const[a,f]=await Promise.all([import(V+"firebase-app.js"),import(V+"firebase-firestore.js")]);return{f,db:f.getFirestore(a.initializeApp(cfg))}};
 const money=n=>"₪"+(+n).toLocaleString();
+
+/* Normalize product records coming from Firestore/catalog.
+   Older records can use Arabic category names or slightly different field names. */
+function normType(p){
+  const raw=String(p.type??p.kind??p.category??"").trim().toLowerCase();
+  if(raw=="new"||raw=="جديد"||raw=="جوال جديد"||raw=="phone_new")return "new";
+  if(raw=="used"||raw=="مستعمل"||raw=="جوال مستعمل"||raw=="phone_used")return "used";
+  if(raw=="acc"||raw=="accessory"||raw=="accessories"||raw=="إكسسوار"||raw=="اكسسوار"||raw=="إكسسوارات"||raw=="اكسسوارات")return "acc";
+  if(p.cat||p.emoji||p.time)return "acc";
+  return raw;
+}
+function normalizeProducts(list){
+  return (Array.isArray(list)?list:[]).map((p,i)=>{
+    const x={...p,type:normType(p)};
+    if(!x.brand && x.brandName)x.brand=x.brandName;
+    if(!x.cat && x.categoryName)x.cat=x.categoryName;
+    if(!x.name)x.name=x.title||x.productName||"منتج";
+    if(x.price==null)x.price=x.cost??0;
+    if(x.order==null)x.order=i;
+    return x;
+  }).filter(p=>p.type=="new"||p.type=="used"||p.type=="acc");
+}
 function vis(p){if(p.img)return`<img loading="lazy" decoding="async" onload="this.classList.add('ok')" onerror="this.classList.add('ok')" src="${E(cl(p.img,300))}" alt="${E(p.name)}">`;if(p.type=="acc")return`<span class="ic">${p.emoji||"🎧"}</span>`;const c=(p.colors||"#2b4bd0,#050b22").split(",");return`<div class="p" style="background:linear-gradient(160deg,${c[0]},${c[1]})"></div>`}
 function card(p,i){const d=p.old?Math.round((1-p.price/p.old)*100):0,a=p.type=="acc";return`<div class="pd rv${a?" ac":""}" style="--d:${Math.min(i||0,5)*.06}s"><div class="pi${p.img?" im":""}">${a?"":`<span class="bg">${E(p.badge)}</span>`}${d>0?`<span class="ds">-${d}%</span>`:""}${vis(p)}</div><div class="pb">${a?"":`<small>${E(p.brand)}</small>`}<h3>${E(p.name)}</h3>${a?`<span class="tm">⏱ ${E(p.time)}</span><span class="sq">${E(p.specs)}</span>`:`<span class="sp">${p.type=="used"?"مستعمل · "+E(p.cond||"بحالة ممتازة"):"متوفر للاستفسار"}</span>`}<div class="pr"><span><b>${money(p.price)}</b>${p.old?`<s>${money(p.old)}</s>`:""}</span><button onclick="A('${p.id}')" aria-label="أضف ${E(p.name)} للسلة">＋</button></div></div></div>`}
 function row(k,title,name,L){if(!L.length)return"";const ex=X[k]&&L.length>6;return`<div class="bb"><div class="bh"><h3>${title}</h3>${L.length>6?`<button data-k="${k}">${ex?"عرض أقل ↑":k[0]=="a"?"عرض الكل ←":"عرض كل جوالات "+name+" ←"}</button>`:""}</div><div class="gr${ex?" ex":""}">${(ex?L:L.slice(0,6)).map(card).join("")}</div></div>`}
-function R(){setTimeout(RV,0);setTimeout(()=>{[["new","new"],["used","used"],["acc","acc"]].forEach(([t,id])=>{const e=P.some(p=>p.type==t)||(t=="new"&&!P.length),s=document.getElementById(id),l=document.querySelector('.nv a[href="#'+id+'"]');if(s)s.style.display=e?"":"none";if(l)l.style.display=e?"":"none"});const ok=id=>{const s=document.getElementById(id);return s&&s.style.display!="none"};document.querySelectorAll(".cats a").forEach(c=>{const t=c.getAttribute("href").slice(1);c.style.display=ok(t)?"":"none"});const h3=document.querySelector(".h3"),sd=document.querySelector(".side");if(h3&&sd){const o=ok("acc");h3.style.display=o?"":"none";sd.style.gridTemplateColumns=o?"":"1fr"}},0);const f=p=>((p.name||"")+(p.specs||"")).toLowerCase().includes(q),u=a=>[...new Set(a)];
-[["new","gn"],["used","gu"]].forEach(([t,id])=>{$(id).innerHTML=u(P.filter(p=>p.type==t).map(p=>p.brand)).map(b=>row(t+b,b,b,P.filter(p=>p.type==t&&p.brand==b&&f(p)))).join("")||'<p style="color:var(--mut)">'+(LD?"جاري تحميل المنتجات…":"لا توجد منتجات حاليًا")+'</p>'});
-$("ga").innerHTML=u(P.filter(p=>p.type=="acc").map(p=>p.cat)).map(c=>row("a"+c,(ACI[c]||"🎧")+" "+c,c,P.filter(p=>p.type=="acc"&&p.cat==c&&f(p)))).join("")}
+function R(){
+  setTimeout(RV,0);
+  setTimeout(()=>{
+    [["new","new"],["used","used"],["acc","acc"]].forEach(([t,id])=>{
+      const e=P.some(p=>p.type==t)||(t=="new"&&!P.length),s=$(id),l=document.querySelector('.nv a[href="#'+id+'"]');
+      if(s)s.style.display=e?"":"none";if(l)l.style.display=e?"":"none";
+    });
+    const ok=id=>{const s=$(id);return s&&s.style.display!="none"};
+    document.querySelectorAll(".cats a").forEach(c=>{const t=c.getAttribute("href").slice(1);c.style.display=ok(t)?"":"none"});
+    const h3=document.querySelector(".h3"),sd=document.querySelector(".side");if(h3&&sd){const o=ok("acc");h3.style.display=o?"":"none";sd.style.gridTemplateColumns=o?"":"1fr"}
+  },0);
+  const f=p=>((p.name||"")+(p.specs||"")+(p.brand||"")+(p.cat||"")).toLowerCase().includes(q),u=a=>[...new Set(a.filter(Boolean))];
+
+  [["new","gn"],["used","gu"]].forEach(([t,id])=>{
+    const list=P.filter(p=>p.type==t&&f(p));
+    const brands=u(list.map(p=>p.brand||"منتجات"));
+    $(id).innerHTML=brands.map(b=>row(t+b,b,b,list.filter(p=>(p.brand||"منتجات")==b))).join("")||
+      '<p style="color:var(--mut)">'+(LD?"جاري تحميل المنتجات…":"لا توجد منتجات حاليًا")+'</p>';
+  });
+
+  const acc=P.filter(p=>p.type=="acc"&&f(p));
+  const cats=u(acc.map(p=>p.cat||"إكسسوارات"));
+  $("ga").innerHTML=cats.map(c=>row("a"+c,(ACI[c]||"🎧")+" "+c,c,acc.filter(p=>(p.cat||"إكسسوارات")==c))).join("")||
+    '<p style="color:var(--mut)">'+(LD?"جاري تحميل المنتجات…":"لا توجد إكسسوارات حاليًا")+'</p>';
+}
 ["gn","gu","ga"].forEach(id=>$(id).onclick=e=>{const k=e.target.getAttribute("data-k");if(k){X[k]=!X[k];R()}});
 $("q").oninput=function(){q=this.value.toLowerCase();R()};
-function applyCatalog(d){try{if(d.products&&d.products.length){P=d.products.filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));try{localStorage.setItem("bp",JSON.stringify(P))}catch(e){}}
+function applyCatalog(d){try{if(d.products&&d.products.length){P=normalizeProducts(d.products).filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));try{localStorage.setItem("bp",JSON.stringify(P))}catch(e){}}
 if(d.branches&&d.branches.length){BRS=d.branches;try{localStorage.setItem("bb",JSON.stringify(BRS))}catch(e){}RB()}
 if(d.banner){BNR=d.banner;try{localStorage.setItem("bn",JSON.stringify(BNR))}catch(e){}RN()}
 if(d.services){SVS=d.services;try{localStorage.setItem("sv",JSON.stringify(SVS))}catch(e){}RSV()}
 LD=false;R();U()}catch(e){console.warn(e)}}
-async function legacy(f,db){const s=await f.getDocs(f.collection(db,"products")),a=s.docs.map(d=>({...d.data(),id:d.id})).filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));P=a;try{localStorage.setItem("bp",JSON.stringify(a))}catch(e){}
+async function legacy(f,db){const s=await f.getDocs(f.collection(db,"products")),a=normalizeProducts(s.docs.map(d=>({...d.data(),id:d.id}))).filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));P=a;try{localStorage.setItem("bp",JSON.stringify(a))}catch(e){}
 for(const[k,set]of[["branches",d=>{if(d.list){BRS=d.list;RB()}}],["banner",d=>{BNR=d;RN()}],["services",d=>{if(d.list){SVS=d.list;RSV()}}],["screens",d=>{if(d.list){SCREENS=d.list;RSV()}}]]){try{const x=await f.getDoc(f.doc(db,"settings",k));if(x.exists())set(x.data())}catch(e){}}R();U()}
 async function load(){try{P=JSON.parse(localStorage.getItem("bp")||"null")}catch(e){}if(!P||!P.length)P=ON?[]:demoDocs().map((d,i)=>({...d,id:"d"+i}));R();U();if(!ON){LD=false;R();return}
 try{const{f,db}=await fx();
-try{const ps=await f.getDocs(f.collection(db,"products"));const latest=ps.docs.map(d=>({...d.data(),id:d.id})).filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));if(latest.length){P=latest;try{localStorage.setItem("bp",JSON.stringify(P))}catch(e){}R();U()}}catch(e){console.warn("products load",e)}
+try{const ps=await f.getDocs(f.collection(db,"products"));const latest=normalizeProducts(ps.docs.map(d=>({...d.data(),id:d.id}))).filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));if(latest.length){P=latest;try{localStorage.setItem("bp",JSON.stringify(P))}catch(e){}R();U()}}catch(e){console.warn("products load",e)}
 await new Promise(res=>{let first=true;f.onSnapshot(f.doc(db,"settings","catalog"),async s=>{try{if(s.exists()){const d=s.data()||{};if(Array.isArray(d.products)&&d.products.length)applyCatalog(d);else{try{const ps=await f.getDocs(f.collection(db,"products"));const latest=ps.docs.map(d=>({...d.data(),id:d.id})).filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));if(latest.length){P=latest;try{localStorage.setItem("bp",JSON.stringify(P))}catch(e){}R();U()}}catch(e){console.warn("products fallback",e)}applyCatalog({...d,products:P})}}else if(first)await legacy(f,db)}catch(e){console.warn(e)}first=false;res()},e=>{console.warn(e);res()})});
 try{if(!sessionStorage.getItem("bv")){sessionStorage.setItem("bv","1");const n=new Date(),d=new Date(n-n.getTimezoneOffset()*6e4).toISOString().slice(0,10),r=f.doc(db,"visits",d);try{await f.updateDoc(r,{n:f.increment(1)})}catch(e){await f.setDoc(r,{n:1})}}}catch(e){}
 }catch(e){console.warn(e)}finally{LD=false;R()}}
