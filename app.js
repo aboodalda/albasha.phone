@@ -87,6 +87,7 @@ function applyCatalog(d){try{if(d.products&&d.products.length){P=normalizeProduc
 if(d.branches&&d.branches.length){BRS=d.branches;try{localStorage.setItem("bb",JSON.stringify(BRS))}catch(e){}RB()}
 if(d.banner){BNR=d.banner;try{localStorage.setItem("bn",JSON.stringify(BNR))}catch(e){}RN()}
 if(d.services){SVS=d.services;try{localStorage.setItem("sv",JSON.stringify(SVS))}catch(e){}RSV()}
+if(Array.isArray(d.screens)){SCREENS=d.screens;try{localStorage.setItem("screens",JSON.stringify(SCREENS))}catch(e){}RSV()}
 LD=false;R();U()}catch(e){console.warn(e)}}
 async function legacy(f,db){const s=await readDocs(f,f.collection(db,"products")),a=normalizeProducts(s.docs.map(d=>({...d.data(),id:d.id}))).filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));P=a;try{localStorage.setItem("bp",JSON.stringify(a))}catch(e){}
 for(const[k,set]of[["branches",d=>{if(d.list){BRS=d.list;RB()}}],["banner",d=>{BNR=d;RN()}],["services",d=>{if(d.list){SVS=d.list;RSV()}}],["screens",d=>{if(d.list){SCREENS=d.list;RSV()}}]]){try{const x=await f.getDoc(f.doc(db,"settings",k));if(x.exists())set(x.data())}catch(e){}}R();U()}
@@ -184,7 +185,7 @@ $("rform").style.display="none";$("rdone").style.display="block"};
 const DN={active:true,tag:"الجديد وصل",title:"أحدث الجوالات\nبأفضل الأسعار",text:"جوالات جديدة متوفرة الآن — اطلب عبر واتساب واستلم بسرعة.",btn:"تسوّق الآن ←",msg:""};
 let BNR=DN;try{BNR=JSON.parse(localStorage.getItem("bn"))||DN}catch(e){}
 const E=s=>String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-function RN(){const b=BNR;$("hbn").style.display=b.active===false?"none":"";$("bt").textContent=b.tag||"";$("bh").innerHTML=E(b.title).replace(/\n/g,"<br>");$("bp").textContent=b.text||"";$("bb").textContent=b.btn||"تسوّق الآن ←"}
+function RN(){const b=BNR,h=$("hbn"),bt=$("bt"),bh=$("bh"),bp=$("bp"),bb=$("bb");if(h)h.style.display=b.active===false?"none":"";if(bt)bt.textContent=b.tag||"";if(bh)bh.innerHTML=E(b.title).replace(/\n/g,"<br>");if(bp)bp.textContent=b.text||"";if(bb)bb.textContent=b.btn||"تسوّق الآن ←"}
 window.BN=()=>{const L=BRS.filter(b=>b.active!==false);if(L.length==1)return BW(0);$("ksh").className="";$("rsh").className="";$("bsh").className="on";$("kov").className="on";document.body.style.overflow="hidden";$("bl").innerHTML=L.map((b,i)=>`<button class="ks" onclick="BW(${i})">💬 فرع ${E(b.name)}${b.addr?" — "+E(b.addr):""}</button>`).join("")};
 window.BW=i=>{const b=BRS.filter(x=>x.active!==false)[i],t=BNR.msg||"مرحبًا الباشا فون 👋\nبدي أستفسر عن: "+String(BNR.title||"").replace(/\n/g," ");window.open("https://wa.me/"+wa(b)+"?text="+encodeURIComponent(t),"_blank");K(0)};
 const IO="IntersectionObserver"in window?new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");IO.unobserve(e.target)}}),{threshold:.08,rootMargin:"0px 0px -4% 0px"}):null;
