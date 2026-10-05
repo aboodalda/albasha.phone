@@ -359,3 +359,6 @@ header{background:#fff;color:#091431}
 .screen-card>em img{width:100%;height:100%;object-fit:cover;display:block}
 .screen-card h3{margin-bottom:4px}
 .screen-card p{min-height:0}
+
+/* Product visibility safety: product cards must remain visible even if IntersectionObserver is unavailable. */
+.js .pd.rv{opacity:1;transform:none}
