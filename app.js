@@ -5,6 +5,8 @@ const ACI={"ساعات ذكية":"⌚","سماعات رأس":"🎧","سماعا�
 let P=[],cart={},q="",X={},LD=ON,SCREENS=[];
 const cl=(u,w)=>u.includes("/upload/")?u.replace("/upload/","/upload/f_auto,q_auto,w_"+w+"/"):u,g=id=>P.find(p=>p.id==id);
 const fx=async()=>{const[a,f]=await Promise.all([import(V+"firebase-app.js"),import(V+"firebase-firestore.js")]);return{f,db:f.getFirestore(a.initializeApp(cfg))}};
+const readDocs=async(f,ref)=>{try{if(f.getDocsFromServer)return await f.getDocsFromServer(ref)}catch(e){console.warn("server read fallback:",e)}return f.getDocs(ref)};
+const readDoc=async(f,ref)=>{try{if(f.getDocFromServer)return await f.getDocFromServer(ref)}catch(e){console.warn("server doc fallback:",e)}return f.getDoc(ref)};
 const money=n=>"₪"+(+n).toLocaleString();
 
 /* Normalize product records coming from Firestore/catalog.
@@ -63,7 +65,7 @@ if(d.branches&&d.branches.length){BRS=d.branches;try{localStorage.setItem("bb",J
 if(d.banner){BNR=d.banner;try{localStorage.setItem("bn",JSON.stringify(BNR))}catch(e){}RN()}
 if(d.services){SVS=d.services;try{localStorage.setItem("sv",JSON.stringify(SVS))}catch(e){}RSV()}
 LD=false;R();U()}catch(e){console.warn(e)}}
-async function legacy(f,db){const s=await f.getDocs(f.collection(db,"products")),a=normalizeProducts(s.docs.map(d=>({...d.data(),id:d.id}))).filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));P=a;try{localStorage.setItem("bp",JSON.stringify(a))}catch(e){}
+async function legacy(f,db){const s=await readDocs(f,f.collection(db,"products")),a=normalizeProducts(s.docs.map(d=>({...d.data(),id:d.id}))).filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));P=a;try{localStorage.setItem("bp",JSON.stringify(a))}catch(e){}
 for(const[k,set]of[["branches",d=>{if(d.list){BRS=d.list;RB()}}],["banner",d=>{BNR=d;RN()}],["services",d=>{if(d.list){SVS=d.list;RSV()}}],["screens",d=>{if(d.list){SCREENS=d.list;RSV()}}]]){try{const x=await f.getDoc(f.doc(db,"settings",k));if(x.exists())set(x.data())}catch(e){}}R();U()}
 async function load(){
   try{P=JSON.parse(localStorage.getItem("bp")||"null");P=normalizeProducts(P||[]).filter(p=>p.stock!==false)}catch(e){P=[]}
@@ -77,7 +79,7 @@ async function load(){
     // Load the real products collection directly first. This must not wait for catalog/settings.
     try{
       const ps=await Promise.race([
-        f.getDocs(f.collection(db,"products")),
+        readDocs(f,f.collection(db,"products")),
         new Promise((_,rej)=>setTimeout(()=>rej(new Error("products timeout")),8000))
       ]);
       const latest=normalizeProducts(ps.docs.map(d=>({...d.data(),id:d.id})))
@@ -93,7 +95,7 @@ async function load(){
     // Catalog is only for branches/banner/services. Never let an empty products array erase P.
     try{
       const s=await Promise.race([
-        f.getDoc(f.doc(db,"settings","catalog")),
+        readDoc(f,f.doc(db,"settings","catalog")),
         new Promise((_,rej)=>setTimeout(()=>rej(new Error("catalog timeout")),5000))
       ]);
       if(s.exists())applyCatalog(s.data());
