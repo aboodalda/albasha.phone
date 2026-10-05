@@ -65,12 +65,52 @@ if(d.services){SVS=d.services;try{localStorage.setItem("sv",JSON.stringify(SVS))
 LD=false;R();U()}catch(e){console.warn(e)}}
 async function legacy(f,db){const s=await f.getDocs(f.collection(db,"products")),a=normalizeProducts(s.docs.map(d=>({...d.data(),id:d.id}))).filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));P=a;try{localStorage.setItem("bp",JSON.stringify(a))}catch(e){}
 for(const[k,set]of[["branches",d=>{if(d.list){BRS=d.list;RB()}}],["banner",d=>{BNR=d;RN()}],["services",d=>{if(d.list){SVS=d.list;RSV()}}],["screens",d=>{if(d.list){SCREENS=d.list;RSV()}}]]){try{const x=await f.getDoc(f.doc(db,"settings",k));if(x.exists())set(x.data())}catch(e){}}R();U()}
-async function load(){try{P=JSON.parse(localStorage.getItem("bp")||"null")}catch(e){}if(!P||!P.length)P=ON?[]:demoDocs().map((d,i)=>({...d,id:"d"+i}));R();U();if(!ON){LD=false;R();return}
-try{const{f,db}=await fx();
-try{const ps=await f.getDocs(f.collection(db,"products"));const latest=normalizeProducts(ps.docs.map(d=>({...d.data(),id:d.id}))).filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));if(latest.length){P=latest;try{localStorage.setItem("bp",JSON.stringify(P))}catch(e){}R();U()}}catch(e){console.warn("products load",e)}
-await new Promise(res=>{let first=true;f.onSnapshot(f.doc(db,"settings","catalog"),async s=>{try{if(s.exists()){const d=s.data()||{};if(Array.isArray(d.products)&&d.products.length)applyCatalog(d);else{try{const ps=await f.getDocs(f.collection(db,"products"));const latest=ps.docs.map(d=>({...d.data(),id:d.id})).filter(p=>p.stock!==false).sort((x,y)=>(x.order||0)-(y.order||0));if(latest.length){P=latest;try{localStorage.setItem("bp",JSON.stringify(P))}catch(e){}R();U()}}catch(e){console.warn("products fallback",e)}applyCatalog({...d,products:P})}}else if(first)await legacy(f,db)}catch(e){console.warn(e)}first=false;res()},e=>{console.warn(e);res()})});
-try{if(!sessionStorage.getItem("bv")){sessionStorage.setItem("bv","1");const n=new Date(),d=new Date(n-n.getTimezoneOffset()*6e4).toISOString().slice(0,10),r=f.doc(db,"visits",d);try{await f.updateDoc(r,{n:f.increment(1)})}catch(e){await f.setDoc(r,{n:1})}}}catch(e){}
-}catch(e){console.warn(e)}finally{LD=false;R()}}
+async function load(){
+  try{P=JSON.parse(localStorage.getItem("bp")||"null");P=normalizeProducts(P||[]).filter(p=>p.stock!==false)}catch(e){P=[]}
+  if(!P.length&& !ON)P=demoDocs().map((d,i)=>({...d,id:"d"+i}));
+  R();U();
+  if(!ON){LD=false;R();return}
+
+  try{
+    const{f,db}=await fx();
+
+    // Load the real products collection directly first. This must not wait for catalog/settings.
+    try{
+      const ps=await Promise.race([
+        f.getDocs(f.collection(db,"products")),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error("products timeout")),8000))
+      ]);
+      const latest=normalizeProducts(ps.docs.map(d=>({...d.data(),id:d.id})))
+        .filter(p=>p.stock!==false)
+        .sort((x,y)=>(x.order||0)-(y.order||0));
+      if(latest.length){
+        P=latest;
+        try{localStorage.setItem("bp",JSON.stringify(P))}catch(e){}
+        LD=false;R();U();
+      }
+    }catch(e){console.warn("products load:",e)}
+
+    // Catalog is only for branches/banner/services. Never let an empty products array erase P.
+    try{
+      const s=await Promise.race([
+        f.getDoc(f.doc(db,"settings","catalog")),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error("catalog timeout")),5000))
+      ]);
+      if(s.exists())applyCatalog(s.data());
+      else{
+        try{
+          const legacyProducts=await f.getDocs(f.collection(db,"products"));
+          const latest=normalizeProducts(legacyProducts.docs.map(d=>({...d.data(),id:d.id})))
+            .filter(p=>p.stock!==false)
+            .sort((x,y)=>(x.order||0)-(y.order||0));
+          if(latest.length){P=latest;try{localStorage.setItem("bp",JSON.stringify(P))}catch(e){}}
+        }catch(e){console.warn("legacy products:",e)}
+        R();U();
+      }
+    }catch(e){console.warn("catalog load:",e)}
+  }catch(e){console.warn("firebase load:",e)}
+  finally{LD=false;R();U()}
+}
 /* ---- السلة ---- */
 try{cart=JSON.parse(localStorage.getItem("bc")||"{}")||{}}catch(e){}
 const S=()=>{try{localStorage.setItem("bc",JSON.stringify(cart))}catch(e){}},ids=()=>Object.keys(cart).filter(g),cnt=()=>ids().reduce((s,k)=>s+cart[k],0),tot=()=>ids().reduce((s,k)=>s+cart[k]*g(k).price,0);
