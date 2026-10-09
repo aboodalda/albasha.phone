@@ -168,7 +168,7 @@ const k=ids(),L=k.map((i,x)=>{const q=g(i);return(x+1)+") "+q.name+(q.type=="use
 const m="🛒 طلب جديد — الباشا فون\n\n👤 الاسم: "+n+"\n📞 الجوال: "+p+"\n📍 الفرع: "+br+"\n🚚 الاستلام: "+$("kmeth").value+(dl?" — "+a:"")+"\n\n"+L+"\n\n💰 الإجمالي: "+money(tot())+(nt?"\n📝 ملاحظات: "+nt:"");
 const o={name:n,phone:p,branch:br,method:$("kmeth").value,addr:a,note:nt,total:tot(),items:k.map(i=>({id:i,name:g(i).name,qty:cart[i],price:+g(i).price}))};
 window.open("https://wa.me/"+wa(BRS.find(b=>b.name==br)||BRS[0])+"?text="+encodeURIComponent(m),"_blank");
-if(ON)try{const{f,db}=await fx();await f.addDoc(f.collection(db,"orders"),{...o,status:"جديد",at:f.serverTimestamp()})}catch(e){}
+if(ON)try{const{f,db}=await fx();await f.addDoc(f.collection(db,"orders"),{...o,status:"جديد",at:f.serverTimestamp()})}catch(e){console.error("order save:",e);alert("تم فتح واتساب، لكن تعذّر تسجيل الطلب في لوحة التحكم. تأكد من الاتصال وأبلغ صاحب المتجر بعد إرسال الطلب.")}
 cart={};S();U();$("kit").innerHTML="";$("kform").style.display="none";$("kdone").style.display="block"};
 $("cart").onclick=()=>K(1);
 if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
@@ -180,7 +180,7 @@ window.RP=o=>{$("ksh").className="";$("rsh").className=o?"on":"";$("kov").classN
 window.RS=async()=>{const n=$("rname").value.trim(),p=$("rphone").value.replace(/\D/g,""),d=$("rdev").value.trim(),i=$("risu").value.trim(),br=$("rbr").value,er=$("rerr");if(!n)return er.textContent="اكتب اسمك";if(p.length<9)return er.textContent="اكتب رقم جوال صحيح";if(!d)return er.textContent="اكتب نوع الجهاز";er.textContent="";
 const m="🔧 طلب صيانة — الباشا فون\n\n👤 الاسم: "+n+"\n📞 الجوال: "+p+"\n📍 الفرع: "+br+"\n📱 الجهاز: "+d+(i?"\n⚠️ المشكلة: "+i:"");
 window.open("https://wa.me/"+wa(BRS.find(b=>b.name==br)||BRS[0])+"?text="+encodeURIComponent(m),"_blank");
-if(ON)try{const{f,db}=await fx();await f.addDoc(f.collection(db,"repairs"),{name:n,phone:p,branch:br,device:d,issue:i,status:"جديد",at:f.serverTimestamp()})}catch(e){}
+if(ON)try{const{f,db}=await fx();await f.addDoc(f.collection(db,"repairs"),{name:n,phone:p,branch:br,device:d,issue:i,status:"جديد",at:f.serverTimestamp()})}catch(e){console.error("repair save:",e);alert("تم فتح واتساب، لكن تعذّر تسجيل طلب الصيانة في لوحة التحكم. تأكد من الاتصال وأبلغ صاحب المتجر بعد إرسال الطلب.")}
 $("rform").style.display="none";$("rdone").style.display="block"};
 const DN={active:true,tag:"الجديد وصل",title:"أحدث الجوالات\nبأفضل الأسعار",text:"جوالات جديدة متوفرة الآن — اطلب عبر واتساب واستلم بسرعة.",btn:"تسوّق الآن ←",msg:""};
 let BNR=DN;try{BNR=JSON.parse(localStorage.getItem("bn"))||DN}catch(e){}
